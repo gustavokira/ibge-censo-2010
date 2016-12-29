@@ -12,98 +12,180 @@ html{
 <script src="//d3js.org/topojson.v1.min.js"></script>
 <script>
 
-var width = 1024,
-    height = 720;
+var width = 720,
+    height = 450;
 
-var STATE = "MG";
+var STATE = "AC";
 var max = -1;
 max = 0.7;
 
-var colorRef = d3.interpolatePuBuGn;
-var colorDomain;
-var colorScale;
-var colorStart = colorRef(0.25);
-var ref = 'density';
+var path;
+var svg;
 
-var svg = d3.select("body").append("svg")
+var color={},
+    selected = {},
+    sufix = {},
+    choosen = {}
+    ;
+
+color.range = d3.interpolateYlOrRd;
+color.start = color.range(0);
+color.domain = null;
+
+sufix.values = {
+    setor:"_setor_valores.topo.json",
+    subdistrito:"_subdistrito_valores.topo.json"
+};
+sufix.base = "_estado_silhueta.topo.json";
+sufix.lines = "_subdistrito_linhas.topo.json";
+
+choosen.ref = 'density';
+choosen.value = 'setor';
+
+window.addEventListener('load', init, false )
+
+function init(){
+  createSvg(function(){
+    selectState();
+  });  
+}
+
+function createSvg(cb){
+  svg = d3.select("body").append("svg")
     .attr("width", width)
     .attr("height", height)
 
+  svg.append("g").attr("class","background");
+  svg.append("g").attr("class","colors");
+  svg.append("g").attr("class","lines");
 
-
-var path;
-svg.append("g").attr("class","background");
-svg.append("g").attr("class","colors");
-svg.append("g").attr("class","lines");
-
-importBackground();
-
-
-function importValues(){
-
-// d3.json(STATE+"_setor_valores.topo.json", function(error, data) {
-d3.json(STATE+"_subdistrito_valores.topo.json", function(error, data) {  
-  if (error) return console.error(error);
-
-  var setores = topojson.feature(data, data.objects.color).features;
-    
-colorDomain = d3.scalePow().exponent(1/10).domain([0, max]).range([0.25,1]);
-
-    svg.select("g.colors")
-    .selectAll("path")
-    .data(setores)
-    .enter().append("path")
-      .attr("fill", function(d) {console.log(d.properties[ref]); return colorRef(colorDomain(d.properties[ref])); })
-      .attr("d", path);
-
-});
+  if(cb)cb();
 }
 
-function importBackground(){
-  d3.json(STATE+"_estado_silhueta.topo.json", function(error, data) {
-   if (error) return console.error(error);
-    var setor = topojson.feature(data, data.objects.setor);
+function importValues(cb){
+  d3.json(selected.values, function(error, data) {
+    if (error) return console.error(error);
 
+    var setores = topojson.feature(data, data.objects.color).features;  
+    color.domain = d3.scalePow().exponent(1/20).domain([0, max]).range([0.25,1]);
 
-var projection = d3.geoMercator()
-.rotate([0, 0])
-// .translate([width/2, height/2])
-.fitSize([width, height],setor);
+    setValues(setores);
 
-path = d3.geoPath()
-    .projection(projection);
-
-        svg.select("g.background")
-        .append("path")
-        .datum(setor)
-        .attr("fill", function(){ return colorStart;})
-        .attr("d", path);
-
-        importLines();
-        importValues();
+    if(cb)cb();
   });
-
-
 }
 
+function importBase(cb){
+  d3.json(selected.base, function(error, data) {
+   if (error) return console.error(error);
 
-function importLines(){
+    var setor = topojson.feature(data, data.objects.setor);
+    var projection = defineProjection(setor);
+    path = d3.geoPath().projection(projection);
+    setBase(setor);
+    
+    if(cb)cb();
+  });
+}
 
-  d3.json(STATE+"_subdistrito_linhas.topo.json", function(error, data) {
+function importLines(cb){
+
+  d3.json(selected.lines, function(error, data) {
     if (error) return console.error(error);
 
     var setor = topojson.feature(data, data.objects.subdistrito);
+    setLines(setor);
 
-         svg.select("g.lines")
-        .append("path")
-        .datum(setor)
-        .attr("fill", "none")
-        .attr("stroke", "#333")
-       .attr("stroke-width", 0.1)
-        .attr("stroke-opacity", 0.5)
-        .attr("d", path);
+    if(cb)cb();
   });
 }
 
+function setValues(data){
+  svg.select("g.colors")
+  .selectAll("path")
+  .data(data)
+  .enter().append("path")
+  .attr("fill", function(d) { return color.range(color.domain(d.properties[choosen.ref])); }) 
+  .attr("d", path);
+}
+
+function setBase(data){
+ svg.select("g.background")
+        .append("path")
+        .datum(data)
+        .attr("fill", function(){ return "#333";})
+        .attr("d", path);
+}
+
+function setLines(data){
+  svg.select("g.lines")
+      .append("path")
+      .datum(data)
+      .attr("fill", "none")
+      .attr("stroke", function(d){ return "#fff";})
+      .attr("stroke-width", 0.1)
+      .attr("stroke-opacity", 0.25)
+      .attr("d", path);
+}
+
+function selectValues(values, base, lines){
+  selected.lines = lines;
+  selected.base = base;
+  selected.values = values;
+}
+
+function update(){
+  importBase(function(){
+    importLines();
+    importValues();
+  });
+}
+
+function defineProjection(features){
+  return d3.geoMercator()
+  .rotate([0, 0])
+  .fitSize([width, height],features);
+}
+
+function selectState(){
+  var select = document.getElementById("select_state");
+  var value = select.options[select.selectedIndex].value;
+  STATE = value;
+  selectValues(STATE+sufix.values[choosen.value], STATE+sufix.base, STATE+sufix.lines);
+  svg.selectAll("g path").remove();
+  update();
+}
 
 </script>
+
+  <select name="select_state" id="select_state" onchange="selectState()">
+
+    <option value="AC">AC</option>
+    <option value="AL">AL</option>
+    <option value="AM">AM</option>
+    <option value="AP">AP</option>
+    <option value="BA">BA</option>
+    <option value="CE">CE</option>
+    <option value="DF">DF</option>
+    <option value="ES">ES</option>
+    <option value="GO">GO</option>
+    <option value="MA">MA</option>
+    <option value="MG">MG</option>
+    <option value="MS">MS</option>
+    <option value="MT">MT</option>
+    <option value="PA">PA</option>
+    <option value="PE">PE</option>
+    <option value="PI">PI</option>
+    <option value="PR">PR</option>
+    <option value="RJ">RJ</option>
+    <option value="RN">RN</option>
+    <option value="RO">RO</option>
+    <option value="RR">RR</option>
+    <option value="RS">RS</option>
+    <option value="SC">SC</option>
+    <option value="SE">SE</option>
+    <option value="SP">SP</option>
+    <option value="TO">TO</option>
+    
+  </select>
+</body>
