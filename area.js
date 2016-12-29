@@ -15,8 +15,9 @@ fs.readFile(fileName, 'utf8', function (err,data) {
   	if(line !== ''){
 
 	  	var jsonline = JSON.parse(line);
-	  	
-	  	if(jsonline.properties[partida] !== null){
+	  	console.log(line);
+	  	if(jsonline.properties[partida] !== null && jsonline.geometry != null){
+
 	  		var area = geojsonArea.geometry(jsonline.geometry);
 		  	areas[jsonline.properties[partida]] = area;
 		  	}
