@@ -12,88 +12,98 @@ html{
 <script src="//d3js.org/topojson.v1.min.js"></script>
 <script>
 
-var width = 420,
-    height = 420;
+var width = 1024,
+    height = 720;
 
-var STATE = "RS";
+var STATE = "MG";
 var max = -1;
-// max = 0.7;
+max = 0.7;
 
-var colorRef = d3.interpolateGnBu;
+var colorRef = d3.interpolatePuBuGn;
 var colorDomain;
 var colorScale;
-var colorStart = colorRef(0);
+var colorStart = colorRef(0.25);
 var ref = 'density';
 
 var svg = d3.select("body").append("svg")
     .attr("width", width)
-    .attr("height", height);
+    .attr("height", height)
 
-var path = d3.geoPath()
-    .projection(null);
 
+
+var path;
 svg.append("g").attr("class","background");
 svg.append("g").attr("class","colors");
 svg.append("g").attr("class","lines");
 
-d3.json(STATE+"_setor_color.topo.json", function(error, data) {
+importBackground();
+
+
+function importValues(){
+
+// d3.json(STATE+"_setor_valores.topo.json", function(error, data) {
+d3.json(STATE+"_subdistrito_valores.topo.json", function(error, data) {  
   if (error) return console.error(error);
 
   var setores = topojson.feature(data, data.objects.color).features;
     
-
-setores.forEach(function(d){
-  if(max<d.properties[ref]){
-    max = d.properties[ref];
-  }
-});
-// console.log(max);
-
-
-colorDomain = d3.scalePow().exponent(1/10).domain([0, max]).range([0.05,1]);
-
-// console.log(colorDomain(max));
+colorDomain = d3.scalePow().exponent(1/10).domain([0, max]).range([0.25,1]);
 
     svg.select("g.colors")
     .selectAll("path")
     .data(setores)
     .enter().append("path")
-      .attr("fill", function(d) { return colorRef(colorDomain(d.properties[ref])); })
+      .attr("fill", function(d) {console.log(d.properties[ref]); return colorRef(colorDomain(d.properties[ref])); })
       .attr("d", path);
 
 });
+}
 
-d3.json(STATE+"_subdistrito.back.topo.json", function(error, data) {
- if (error) return console.error(error);
-  var setor = topojson.feature(data, data.objects.subdistrito);
-
-      svg.select("g.background")
-      .append("path")
-      .datum(setor)
-      .attr("fill", function(){ return colorStart;})
-      .attr("d", path);
+function importBackground(){
+  d3.json(STATE+"_estado_silhueta.topo.json", function(error, data) {
+   if (error) return console.error(error);
+    var setor = topojson.feature(data, data.objects.setor);
 
 
-});
+var projection = d3.geoMercator()
+.rotate([0, 0])
+// .translate([width/2, height/2])
+.fitSize([width, height],setor);
 
-d3.json(STATE+"_subdistrito.topo.json", function(error, data) {
-// d3.json(STATE+"_setor.topo.json", function(error, data) {
-  if (error) return console.error(error);
+path = d3.geoPath()
+    .projection(projection);
 
-  // var setor = topojson.feature(data, data.objects.setor);
-  var setor = topojson.feature(data, data.objects.subdistrito);
+        svg.select("g.background")
+        .append("path")
+        .datum(setor)
+        .attr("fill", function(){ return colorStart;})
+        .attr("d", path);
 
-       svg.select("g.lines")
-      .append("path")
-      .datum(setor)
-      .attr("fill", "none")
-      .attr("stroke", "#000")
-     .attr("stroke-width", 0.1)
-      .attr("stroke-opacity", 0.25)
-      .attr("d", path);
- 
+        importLines();
+        importValues();
+  });
 
 
-});
+}
+
+
+function importLines(){
+
+  d3.json(STATE+"_subdistrito_linhas.topo.json", function(error, data) {
+    if (error) return console.error(error);
+
+    var setor = topojson.feature(data, data.objects.subdistrito);
+
+         svg.select("g.lines")
+        .append("path")
+        .datum(setor)
+        .attr("fill", "none")
+        .attr("stroke", "#333")
+       .attr("stroke-width", 0.1)
+        .attr("stroke-opacity", 0.5)
+        .attr("d", path);
+  });
+}
+
 
 </script>
