@@ -5,6 +5,9 @@
 html{
   background: #fff;
 }
+body{
+  padding: 50px;
+}
 </style>
 <body>
 <script src="//d3js.org/d3.v4.min.js" charset="utf-8"></script>
@@ -18,7 +21,7 @@ var width = 720,
 
 var STATE = "AC";
 var max = -1;
-max = 0.7;
+max = 1;
 
 var path;
 var svg;
@@ -29,8 +32,8 @@ var color={},
     choosen = {}
     ;
 
-color.range = d3.interpolateYlOrRd;
-color.start = color.range(0);
+color.range = d3.interpolateReds;
+color.start = color.range(0.25);
 color.domain = null;
 
 sufix.values = {
@@ -40,8 +43,10 @@ sufix.values = {
 sufix.base = "_estado_silhueta.topo.json";
 sufix.lines = "_subdistrito_linhas.topo.json";
 
-choosen.ref = 'density';
-choosen.value = 'setor';
+choosen.refOptions = ['density','population'];
+choosen.ref = choosen.refOptions[0];
+choosen.valueOptions = ['setor','subdistrito'];
+choosen.value = choosen.valueOptions[1];
 
 window.addEventListener('load', init, false )
 
@@ -68,7 +73,7 @@ function importValues(cb){
     if (error) return console.error(error);
 
     var setores = topojson.feature(data, data.objects.color).features;  
-    color.domain = d3.scalePow().exponent(1/20).domain([0, max]).range([0.25,1]);
+    color.domain = d3.scalePow().exponent(1/20).domain([0, max]).range([0,1]);
 
     setValues(setores);
 
@@ -114,7 +119,7 @@ function setBase(data){
  svg.select("g.background")
         .append("path")
         .datum(data)
-        .attr("fill", function(){ return "#333";})
+        .attr("fill", function(){ return color.start;})
         .attr("d", path);
 }
 
@@ -160,10 +165,16 @@ function selectState(){
 </script>
 
   <select name="select_state" id="select_state" onchange="selectState()">
-    
-    <option value="SUL">SUL</option>
 
     <option value="AC">AC</option>
+    
+    <option value="SUL">SUL</option>
+    <option value="SUDESTE">SUDESTE</option>
+    <option value="NORTE">NORTE</option>
+    <option value="NORDESTE">NORDESTE</option>
+    <option value="CENTROOESTE">CENTROOESTE</option>
+
+    
     <option value="AL">AL</option>
     <option value="AM">AM</option>
     <option value="AP">AP</option>
@@ -178,6 +189,7 @@ function selectState(){
     <option value="MT">MT</option>
     <option value="PA">PA</option>
     <option value="PE">PE</option>
+    <option value="PB">PB</option>
     <option value="PI">PI</option>
     <option value="PR">PR</option>
     <option value="RJ">RJ</option>
