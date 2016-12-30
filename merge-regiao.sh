@@ -12,6 +12,15 @@ case $REGIAO in
 		;;
 	SUDESTE)	
 		ESTADOS=(ES SP RJ MG)
+		;;
+	CENTROOESTE)
+		ESTADOS=(DF GO MT MS)
+		;;
+	NORTE)
+		ESTADOS=(AC AP AM PA RP RR TO)
+		;;
+	NORDESTE)
+		ESTADOS=(AL BA CE MA PA PE PI RN SE)
 esac
 
 for i in "${ESTADOS[@]}"
